@@ -1,4 +1,4 @@
-package org.image.core.model;
+package org.image.core.dto;
 
 public enum Role {
     USER,
