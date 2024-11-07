@@ -16,8 +16,8 @@ public class UserController {
 
     private final UserService userService;
     
-    @PostMapping("/{userId}/block")
-    public ResponseEntity<?> setUserBlock(@PathVariable Long userId,
+    @PostMapping("/{id}/blockUser")
+    public ResponseEntity<?> setUserBlock(@PathVariable("id") Long userId,
                                           @RequestParam boolean blockValue) {
             userService.blockUserAccount(userId, blockValue);
             return ResponseEntity.ok().build();

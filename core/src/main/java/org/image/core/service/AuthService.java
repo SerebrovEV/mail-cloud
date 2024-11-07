@@ -2,11 +2,12 @@ package org.image.core.service;
 
 import org.image.core.dto.RegisterReq;
 import org.image.core.dto.Role;
+import org.image.core.dto.UserDto;
 
 public interface AuthService {
     
     boolean login(String userName, String password);
     
-    boolean register(RegisterReq req, Role role);
+    UserDto register(RegisterReq req, Role role);
     
 }

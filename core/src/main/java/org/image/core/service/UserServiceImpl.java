@@ -1,14 +1,16 @@
 package org.image.core.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.image.core.dto.Role;
-import org.image.core.entity.UserEntity;
+import org.image.core.repository.entity.UserEntity;
 import org.image.core.exception.NotEnoughRightsException;
 import org.image.core.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -22,6 +24,7 @@ public class UserServiceImpl implements UserService {
                     .orElseThrow(() -> new UsernameNotFoundException("Пользователь c ID %s не найден ".formatted(userId)));
             userEntity.setAccountNonLocked(blockValue);
             userRepository.save(userEntity);
+            log.info("Изменен статус блокировки на %s пользователя %s пользователем %s".formatted(blockValue, userEntity.getEmail(), getCurrentUser().getEmail()));
         } else {
             throw new NotEnoughRightsException("Недостаточно прав для редактирования");
         }

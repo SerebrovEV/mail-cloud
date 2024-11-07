@@ -1,6 +1,6 @@
 package org.image.core.repository;
 
-import org.image.core.entity.UserEntity;
+import org.image.core.repository.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
