@@ -36,12 +36,23 @@ public class ImageController {
     }
     
     @GetMapping("/get")
-    public ResponseEntity<List<ImageDto>> getUserImages( @RequestParam(value = "imageId", required = false) Long imageId,
-                                                         @RequestParam(value = "date", required = false) Date date,
-                                                         @RequestParam(value = "size", required = false) Long size,
-                                                         @RequestParam(value = "sortBy", required = false, defaultValue = "id") String sortBy,
-                                                         @RequestParam(value = "orderBy", required = false, defaultValue = "asc") String orderBy) {
+    public ResponseEntity<List<ImageDto>> getUserImages(@RequestParam(value = "imageId", required = false) Long imageId,
+                                                        @RequestParam(value = "date", required = false) Date date,
+                                                        @RequestParam(value = "size", required = false) Long size,
+                                                        @RequestParam(value = "sortBy", required = false, defaultValue = "id") String sortBy,
+                                                        @RequestParam(value = "orderBy", required = false, defaultValue = "asc") String orderBy) {
         List<ImageDto> res = imageService.getUserImages(imageId, date, size, sortBy, orderBy);
+        return ResponseEntity.ok(res);
+    }
+    
+    @GetMapping("/getUserImages")
+    public ResponseEntity<List<ImageDto>> getUserImagesForModerator(@RequestParam(value = "userId", required = false) Long userId,
+                                                                    @RequestParam(value = "imageId", required = false) Long imageId,
+                                                                    @RequestParam(value = "date", required = false) Date date,
+                                                                    @RequestParam(value = "size", required = false) Long size,
+                                                                    @RequestParam(value = "sortBy", required = false, defaultValue = "id") String sortBy,
+                                                                    @RequestParam(value = "orderBy", required = false, defaultValue = "asc") String orderBy) {
+        List<ImageDto> res = imageService.getUserImagesForModerator(userId, imageId, date, size, sortBy, orderBy);
         return ResponseEntity.ok(res);
     }
     

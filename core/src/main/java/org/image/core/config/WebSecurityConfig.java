@@ -33,6 +33,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(authz ->
                         authz
                                 .requestMatchers(AUTH_WHITELIST).permitAll()
+                                .requestMatchers("/images/getUserImages").hasAuthority("ROLE_MODERATOR")
                                 .requestMatchers( "/images/**").authenticated()
                                 .requestMatchers("/users/**").hasAuthority("ROLE_MODERATOR"))
                 .userDetailsService(jpaUserDetailsService)

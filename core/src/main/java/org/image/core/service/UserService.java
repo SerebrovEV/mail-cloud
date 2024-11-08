@@ -6,4 +6,6 @@ public interface UserService {
     void blockUserAccount(Long userId, boolean blockValue);
 
     UserEntity getCurrentUser();
+    
+    UserEntity findUserById(Long userId);
 }

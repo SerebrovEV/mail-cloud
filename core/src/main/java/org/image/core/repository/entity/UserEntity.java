@@ -10,7 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.image.core.dto.Role;
+import org.image.core.dto.model.Role;
 
 @Entity
 @Table(name = "app_user")

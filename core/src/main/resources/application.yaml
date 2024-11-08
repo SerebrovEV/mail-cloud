@@ -16,5 +16,16 @@ spring:
   rabbitmq:
     host: localhost
     port: 5672
+    username: guest
+    password: guest
 server:
   port: 7781
+cloud:
+  accessKey:
+  secretKey:
+  presigned-time: 15
+  bucket-name: test-mail
+  service-endpoint: https://storage.yandexcloud.net
+  signin-region: ru-central1
+images:
+  permitted-format: .jpg, .png, .gif

@@ -3,7 +3,7 @@ package org.image.core.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.image.core.dto.RegisterReq;
-import org.image.core.dto.Role;
+import org.image.core.dto.model.Role;
 import org.image.core.dto.UserDto;
 import org.image.core.repository.entity.UserEntity;
 import org.image.core.exception.IncorrectFormatEmailException;
@@ -22,6 +22,7 @@ public class AuthServiceImpl implements AuthService {
     
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final EventService eventService;
     
     
     @Override
@@ -55,6 +56,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         userRepository.save(userEntity);
         log.info("Создан пользователь id %d email %s".formatted(userEntity.getId(), userEntity.getEmail()));
+        eventService.sendMessage(userEntity.getEmail());
         return UserDto.builder()
                 .id(userEntity.getId())
                 .email(userEntity.getEmail())
