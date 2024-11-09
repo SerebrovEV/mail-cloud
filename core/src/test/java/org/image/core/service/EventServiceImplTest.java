@@ -4,7 +4,6 @@ import org.image.core.config.RabbitConfig;
 import org.image.core.dto.model.Action;
 import org.image.core.dto.model.EventMessage;
 import org.image.core.dto.model.ImageInfo;
-import org.image.core.util.ImageUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -15,9 +14,13 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.List;
 
-import static org.image.core.dto.model.TextConstant.*;
+import static org.image.core.dto.model.TextConstant.SUBJECT_DOWNLOAD_IMAGE;
+import static org.image.core.dto.model.TextConstant.SUBJECT_REGISTER_USER;
+import static org.image.core.dto.model.TextConstant.SUBJECT_UPLOAD_IMAGE;
+import static org.image.core.dto.model.TextConstant.TEXT_MESSAGE_REGISTER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.verify;
 
 class EventServiceImplTest {
 
@@ -33,7 +36,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void testSendMessageForRegisterUser() {
+    void testSendMessageF_RegisterUser() {
         String userEmail = "test@example.com";
 
         eventService.sendMessage(userEmail);
@@ -48,14 +51,11 @@ class EventServiceImplTest {
     }
 
     @Test
-    void testSendMessageForDownloadAction() {
+    void testSendMessage_DownloadAction() {
         String userEmail = "test@example.com";
         Action action = Action.DOWNLOAD;
-        ImageInfo imageInfo = mock(ImageInfo.class);
-        when(imageInfo.successImageNames()).thenReturn(List.of("image1.jpg"));
-        when(imageInfo.filesSize()).thenReturn(1L);
-        when(ImageUtils.getSizeInMb(imageInfo)).thenReturn(1.0);
-
+        ImageInfo imageInfo = new ImageInfo(List.of("image1.jpg"), List.of(), 3000000000000L);
+        String expectedMessage = "Было скачано изображение image1.jpg и размер 2861022,95 Мб";
         eventService.sendMessage(userEmail, action, imageInfo);
 
         ArgumentCaptor<EventMessage> messageCaptor = ArgumentCaptor.forClass(EventMessage.class);
@@ -64,23 +64,19 @@ class EventServiceImplTest {
         EventMessage capturedMessage = messageCaptor.getValue();
         assertEquals(userEmail, capturedMessage.getRecipientEmail());
         assertEquals(SUBJECT_DOWNLOAD_IMAGE, capturedMessage.getSubject());
-        assertEquals("Download message: image1.jpg with size 1.5 MB", capturedMessage.getBody());
+        assertEquals(expectedMessage, capturedMessage.getBody());
     }
 
     @Test
-    void testSendMessageForUploadActionWithSuccessAndErrors() {
+    void testSendMessageFo_UploadActionWithSuccessAndErrors() {
         String userEmail = "test@example.com";
         Action action = Action.UPLOAD;
-        ImageInfo imageInfo = mock(ImageInfo.class);
-        when(imageInfo.successImageNames()).thenReturn(List.of("image1.jpg", "image2.jpg"));
-        when(imageInfo.errorsImageNames()).thenReturn(List.of("image3.jpg"));
-        when(imageInfo.filesSize()).thenReturn(3L);
-        when(ImageUtils.getSizeInMb(imageInfo)).thenReturn(3.0);
+        ImageInfo imageInfo = new ImageInfo(List.of("image1.jpg", "image2.jpg"), List.of("image3.jpg"), 3000000000000L);
 
         String expectedTextMessage = """
                             В хранилище были загружены изображения: image1.jpg, image2.jpg..
                             В хранилище не были загружены изображения: image3.jpg..
-                            Общий объём загруженных изображений: 0,00 MB.
+                            Общий объём загруженных изображений: 2861022,95 MB.
                 """;
         eventService.sendMessage(userEmail, action, imageInfo);
 
@@ -94,24 +90,21 @@ class EventServiceImplTest {
     }
 
     @Test
-    void testSendMessageForUploadActionWithNoSuccessImages() {
+    void testSendMessage_UploadActionWithNoSuccessImages() {
         String userEmail = "test@example.com";
         Action action = Action.UPLOAD;
-        ImageInfo imageInfo = mock(ImageInfo.class);
-        when(imageInfo.successImageNames()).thenReturn(List.of());
-        when(imageInfo.errorsImageNames()).thenReturn(List.of("image3.jpg"));
-        when(imageInfo.filesSize()).thenReturn(0L);
+        ImageInfo imageInfo = new ImageInfo(List.of(), List.of("image3.jpg"), 3000000000000L);
+
         String expectedTextMessage = """ 
                             В хранилище были загружены изображения: Отсутсвуют.
                             В хранилище не были загружены изображения: image3.jpg..
-                            Общий объём загруженных изображений: 0,00 MB.
+                            Общий объём загруженных изображений: 2861022,95 MB.
                 """;
 
         eventService.sendMessage(userEmail, action, imageInfo);
 
         ArgumentCaptor<EventMessage> messageCaptor = ArgumentCaptor.forClass(EventMessage.class);
         verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.QUEUE_NAME), messageCaptor.capture());
-
 
         EventMessage capturedMessage = messageCaptor.getValue();
         assertEquals(userEmail, capturedMessage.getRecipientEmail());
