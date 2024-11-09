@@ -8,4 +8,6 @@ public interface UserService {
     UserEntity getCurrentUser();
     
     UserEntity findUserById(Long userId);
+
+    UserEntity findUserByEmail(String userEmail);
 }

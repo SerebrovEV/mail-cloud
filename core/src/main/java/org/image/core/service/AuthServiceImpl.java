@@ -15,6 +15,8 @@ import org.image.core.util.PasswordValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import static org.image.core.dto.model.TextConstant.*;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,21 +33,19 @@ public class AuthServiceImpl implements AuthService {
         if (userEntity == null) {
             return false;
         }
-        String encryptedPassword = userEntity.getPassword();
-        return passwordEncoder.matches(password, encryptedPassword);
+        return passwordEncoder.matches(password, userEntity.getPassword());
     }
     
     @Override
     public UserDto register(RegisterReq req, Role role) {
-        boolean result = false;
         if (!PasswordValidator.isValidPassword(req.getPassword())) {
-            throw new IncorrectPasswordException("Неверный формат пароля");
+            throw new IncorrectPasswordException(TEXT_INCORRECT_FORMAT_PASSWORD);
         }
         if (!EmailValidator.isValidEmail(req.getEmail())) {
-            throw new IncorrectFormatEmailException("Неверный формат email %s".formatted(req.getEmail()));
+            throw new IncorrectFormatEmailException(TEXT_INCORRECT_FORMAT_EMAIL.formatted(req.getEmail()));
         }
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
-            throw new UserAlreadyCreateException("Пользователь с email %s уже существует".formatted(req.getEmail()));
+            throw new UserAlreadyCreateException(TEXT_EMAIL_ALREADY_EXIST.formatted(req.getEmail()));
         }
         
         UserEntity userEntity = UserEntity.builder()
@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(role)
                 .build();
         userRepository.save(userEntity);
-        log.info("Создан пользователь id %d email %s".formatted(userEntity.getId(), userEntity.getEmail()));
+        log.info(TEXT_CREATE_USER.formatted(userEntity.getId(), userEntity.getEmail()));
         eventService.sendMessage(userEntity.getEmail());
         return UserDto.builder()
                 .id(userEntity.getId())

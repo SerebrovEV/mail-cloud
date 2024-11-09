@@ -1,13 +1,7 @@
 package org.image.core.service;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.image.core.dto.ImageDto;
 import org.image.core.dto.model.Action;
 import org.image.core.dto.model.ImageInfo;
@@ -19,113 +13,152 @@ import org.image.core.repository.entity.ImageEntity;
 import org.image.core.repository.entity.UserEntity;
 import org.image.core.util.ImageSpecification;
 import org.image.core.util.ImageValidator;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
-import static org.image.core.dto.model.TextConstant.TEXT_IMAGE_NOT_FOUND;
-import static org.image.core.dto.model.TextConstant.TEXT_NOT_ENOUGH_RIGHT;
+import static org.image.core.dto.model.TextConstant.*;
 
-
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ImageServiceImpl implements ImageService {
 
     private final ImageRepository imageRepository;
     private final UserService userService;
-    private final AmazonS3 s3;
-    private final Integer cloudPresignedTime;
+    private final CloudService cloudService;
     private final EventService eventService;
-    private final String bucketName;
-
-    public ImageServiceImpl(ImageRepository imageRepository, UserService userService, EventService eventService,
-                            @Value("${cloud.presigned-time}") Integer cloudPresignedTime, @Value("${cloud.accessKey}") String accessKey,
-                            @Value("${cloud.secretKey}") String secretKey, @Value("${cloud.bucket-name}") String bucketName,
-                            @Value("${cloud.service-endpoint}") String serviceEndpoint,
-                            @Value("${cloud.signin-region}") String signingRegion) {
-        this.imageRepository = imageRepository;
-        this.userService = userService;
-        this.eventService = eventService;
-        this.cloudPresignedTime = cloudPresignedTime;
-        this.bucketName = bucketName;
-        this.s3 = AmazonS3ClientBuilder.standard()
-                .withEndpointConfiguration(
-                        new AwsClientBuilder.EndpointConfiguration(serviceEndpoint, signingRegion))
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-                .build();
-    }
 
 
+    /**
+     * Метод загрузки изображений в многопоточном режиме.
+     *
+     * @param images массив изображений для загрузки
+     */
     @Override
-    public void uploadImage(MultipartFile[] images) throws IOException {
-        List<String> sucsessUploadFiles = new ArrayList<>();
-        List<String> notUploadFiles = new ArrayList<>();
-        long totalImageSize = 0L;
+    public void uploadImage(MultipartFile[] images) {
+        List<String> successUploadImages = new CopyOnWriteArrayList<>();
+        List<String> notUploadImages = new CopyOnWriteArrayList<>();
+        UserEntity currentUser = userService.getCurrentUser();
+        AtomicLong totalImagesSize = new AtomicLong(0L);
+        LocalDateTime uploadDateTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy_HHmmss");
+        String timestamp = uploadDateTime.format(formatter);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        CountDownLatch countDownLatch = new CountDownLatch(images.length);
         for (MultipartFile image : images) {
-            String imageName = image.getOriginalFilename();
-            try {
+            executorService.submit(() -> {
+                String imageName = image.getOriginalFilename();
                 if (ImageValidator.isValidImage(imageName)) {
-                    LocalDateTime now = LocalDateTime.now();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy_HHmmss");
-                    String timestamp = now.format(formatter);
-                    String objectKey = "%s_%s".formatted(timestamp, image.getOriginalFilename());
-                    s3.putObject(new PutObjectRequest(bucketName, objectKey, image.getInputStream(), null));
-                    Long imageSize = image.getSize();
-                    ImageEntity imageEntity = ImageEntity.builder()
-                            .fileName(objectKey)
-                            .size(imageSize)
-                            .userEntity(userService.getCurrentUser())
-                            .uploadDate(LocalDateTime.now())
-                            .build();
-                    imageRepository.save(imageEntity);
-                    totalImageSize += imageSize;
-                    sucsessUploadFiles.add(imageName);
+                    String imageNameWithTimestamp = "%s_%s".formatted(timestamp, image.getOriginalFilename());
+                    if (cloudService.uploadFile(imageName, image)) {
+                        long imageSize = image.getSize();
+                        ImageEntity imageEntity = ImageEntity.builder()
+                                .fileName(imageNameWithTimestamp)
+                                .size(imageSize)
+                                .userEntity(currentUser)
+                                .uploadDate(uploadDateTime)
+                                .build();
+                        imageRepository.save(imageEntity);
+                        totalImagesSize.addAndGet(imageSize);
+                        successUploadImages.add(imageName);
+                    } else {
+                        notUploadImages.add(imageName);
+                    }
                 } else {
-                    notUploadFiles.add(imageName);
+                    notUploadImages.add(imageName);
                 }
-            } catch (MaxUploadSizeExceededException e) {
-                notUploadFiles.add(imageName);
-            }
+                countDownLatch.countDown();
+            });
         }
-        ImageInfo resultImageInfo = new ImageInfo(sucsessUploadFiles, notUploadFiles, totalImageSize);
-        eventService.sendMessage(userService.getCurrentUser().getEmail(), Action.UPLOAD, resultImageInfo);
+        try {
+            countDownLatch.await(1, TimeUnit.HOURS);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage());
+        } finally {
+            executorService.shutdown();
+        }
+        ImageInfo resultImageInfo = new ImageInfo(successUploadImages, notUploadImages, totalImagesSize.get());
+//        CompletableFuture.runAsync(() -> eventService.sendMessage(currentUser.getEmail(), Action.UPLOAD, resultImageInfo));
+       eventService.sendMessage(currentUser.getEmail(), Action.UPLOAD, resultImageInfo);
     }
 
+    /**
+     * Метод получения списка загруженных изображений пользователем
+     *
+     * @param imageId фильтрация по ID изображения
+     * @param date    фильтрация по дате
+     * @param size    фильтрация по размеру
+     * @param sortBy  сортировка по колонке
+     * @param orderBy порядок сортировки
+     * @return список изображений пользователя
+     */
     @Override
-    public List<ImageDto> getUserImages(Long imageId, Date date, Long size, String sortBy, String orderBy) {
+    public List<ImageDto> getUserImages(Long imageId, LocalDate date, Long size, String sortBy, String orderBy) {
         return getUserImages(userService.getCurrentUser(), imageId, date, size, sortBy, orderBy);
     }
 
+    /**
+     * Метод получения списка загруженных изображений пользователем для модератора
+     *
+     * @param userId  фильтрация по ID пользователя
+     * @param imageId фильтрация по ID изображения
+     * @param date    фильтрация по дате
+     * @param size    фильтрация по размеру
+     * @param sortBy  сортировка по колонке
+     * @param orderBy порядок сортировки
+     * @return список изображений пользователя
+     */
     @Override
-    public List<ImageDto> getUserImagesForModerator(Long userId, Long imageId, Date date, Long size, String sortBy, String orderBy) {
+    public List<ImageDto> getUserImagesForModerator(Long userId, Long imageId, LocalDate date, Long size, String sortBy, String orderBy) {
         if (Role.MODERATOR.equals(userService.getCurrentUser().getRole())) {
-            return getUserImages(userService.findUserById(userId), imageId, date, size, sortBy, orderBy);
+            UserEntity ownerImages = userId == null ? null : userService.findUserById(userId);
+            return getUserImages(ownerImages, imageId, date, size, sortBy, orderBy);
         } else {
             throw new NotEnoughRightsException(TEXT_NOT_ENOUGH_RIGHT);
         }
     }
 
-
+    /**
+     * Метод получения временной ссылки для скачивания изображения
+     *
+     * @param imageId ID изображения
+     * @return ссылка на скачивание
+     */
     @Override
     public String downloadUserImage(Long imageId) {
-        ImageEntity image = imageRepository.findById(imageId)
+        UserEntity ownerUser = userService.getCurrentUser();
+        ImageEntity image = imageRepository.findByIdAndAndUserEntity(imageId, ownerUser)
                 .orElseThrow(() -> new ImageNotFoundException(TEXT_IMAGE_NOT_FOUND.formatted(imageId)));
-        String resultLink = generatePresignedUrl(image.getFileName());
-        eventService.sendMessage(userService.getCurrentUser().getEmail(), Action.DOWNLOAD, new ImageInfo(List.of(image.getFileName()),
+        String temporaryLink = cloudService.createTemporaryLinkForDownload(image.getFileName());
+        String userEmail = userService.getCurrentUser().getEmail();
+        eventService.sendMessage(userEmail, Action.DOWNLOAD, new ImageInfo(List.of(image.getFileName()),
                 null, image.getSize()));
-        return resultLink;
+        log.info(TEXT_DOWNLOAD_IMAGE.formatted(userEmail, imageId));
+        return temporaryLink;
     }
 
-    private List<ImageDto> getUserImages(UserEntity userId, Long imageId, Date date, Long size, String sortBy, String orderBy) {
+    /**
+     * Метод получения списка загруженных изображений пользователем
+     *
+     * @param userId  фильтрация по ID пользователя
+     * @param imageId фильтрация по ID изображения
+     * @param date    фильтрация по дате
+     * @param size    фильтрация по размеру
+     * @param sortBy  сортировка по колонке
+     * @param orderBy порядок сортировки
+     * @return список изображений пользователя
+     */
+    private List<ImageDto> getUserImages(UserEntity userId, Long imageId, LocalDate date, Long size, String sortBy, String orderBy) {
         Specification<ImageEntity> spec = Specification.where(ImageSpecification.hasId(imageId))
                 .and(ImageSpecification.hasUserId(userId))
                 .and(ImageSpecification.hasDate(date))
@@ -141,17 +174,5 @@ public class ImageServiceImpl implements ImageService {
                 .toList();
     }
 
-    private String generatePresignedUrl(String objectKey) {
-        Date expiration = new Date();
-        long expTimeMillis = expiration.getTime();
-        expTimeMillis += 1000L * 60 * cloudPresignedTime; //15 мин
-        expiration.setTime(expTimeMillis);
 
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(bucketName, objectKey)
-                        .withMethod(HttpMethod.GET)
-                        .withExpiration(expiration);
-
-        return s3.generatePresignedUrl(generatePresignedUrlRequest).toString();
-    }
 }

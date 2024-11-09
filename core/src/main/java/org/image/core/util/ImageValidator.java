@@ -21,9 +21,9 @@ public class ImageValidator {
         PERMITTED_FORMAT_IMAGES = permittedFormatImages;
     }
     
-    public static boolean isValidImage(String imageName) {
+    public static Boolean isValidImage(String imageName) {
         for (String format : PERMITTED_FORMAT_IMAGES) {
-            if (imageName.toUpperCase().endsWith(format.toUpperCase())) {
+            if (imageName!= null && imageName.toUpperCase().endsWith(format.toUpperCase())) {
                 return true;
             }
         }

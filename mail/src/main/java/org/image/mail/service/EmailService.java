@@ -1,12 +1,19 @@
 package org.image.mail.service;
 
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import static org.image.mail.model.TextConstant.TEXT_SEND_EMAIL;
+
+@Slf4j
 @Service
 public class EmailService {
+
     private final String postServerMail;
     private final JavaMailSender mailSender;
 
@@ -21,19 +28,6 @@ public class EmailService {
         message.setSubject(subject);
         message.setText(body);
         mailSender.send(message);
-//        try {
-//            MimeMessage message = mailSender.createMimeMessage();
-//            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-//
-//            helper.setTo("89818121788@mail.ru");
-//            message.setFrom("evgeniy.smirnov92@gmail.com");
-//            helper.setSubject("123");
-//            helper.setText("123"); // true для HTML-содержимого
-//
-//            mailSender.send(message);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
+        log.info(TEXT_SEND_EMAIL.formatted(to));
     }
-
 }

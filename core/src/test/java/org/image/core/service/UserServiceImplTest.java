@@ -38,6 +38,7 @@ class UserServiceImplTest {
         user = new UserEntity();
         user.setId(1L);
         user.setEmail("user@example.com");
+        user.setRole(Role.USER);
         user.setAccountNonLocked(true);
         
         moderator = new UserEntity();
@@ -49,11 +50,11 @@ class UserServiceImplTest {
     @Test
     public void testFindUserById_UserExists() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        
+
         UserEntity foundUser = userService.findUserById(1L);
-        
+
         assertNotNull(foundUser);
-        assertEquals("test@example.com", foundUser.getEmail());
+        assertEquals("user@example.com", foundUser.getEmail());
         verify(userRepository, times(1)).findById(1L);
     }
     
@@ -66,27 +67,48 @@ class UserServiceImplTest {
         assertNull(foundUser);
         verify(userRepository, times(1)).findById(2L);
     }
+
+    @Test
+    public void findUserByEmail_UserExists() {
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+
+        UserEntity foundUser = userService.findUserByEmail("user@example.com");
+
+        assertNotNull(foundUser);
+        assertEquals("user@example.com", foundUser.getEmail());
+        verify(userRepository, times(1)).findByEmail("user@example.com");
+    }
+
+    @Test
+    public void findUserByEmail_UserDoesNotExist() {
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.empty());
+
+        UserEntity foundUser = userService.findUserByEmail("user@example.com");
+
+        assertNull(foundUser);
+        verify(userRepository, times(1)).findByEmail("user@example.com");
+    }
     
     @Test
     public void testGetCurrentUser_UserExists() {
         Authentication authentication = mock(Authentication.class);
         when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn("test@example.com");
+        when(authentication.getName()).thenReturn("user@example.com");
         
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
         
 
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         
 
         UserEntity currentUser = userService.getCurrentUser();
         
 
         assertNotNull(currentUser);
-        assertEquals("test@example.com", currentUser.getEmail());
-        verify(userRepository, times(1)).findByEmail("test@example.com");
+        assertEquals("user@example.com", currentUser.getEmail());
+        verify(userRepository, times(1)).findByEmail("user@example.com");
     }
     
     @Test
@@ -111,10 +133,7 @@ class UserServiceImplTest {
     @Test
     public void testGetCurrentUser_NoAuthentication() {
         SecurityContextHolder.setContext(mock(SecurityContext.class));
-        
         UserEntity currentUser = userService.getCurrentUser();
-        
-
         assertNull(currentUser);
     }
     
@@ -138,7 +157,7 @@ class UserServiceImplTest {
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("moderator@example.com");
         when(authentication.getPrincipal()).thenReturn(moderator);
-        
+        when(userRepository.findByEmail("moderator@example.com")).thenReturn(Optional.ofNullable(moderator));
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
@@ -157,7 +176,8 @@ class UserServiceImplTest {
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("moderator@example.com");
         when(authentication.getPrincipal()).thenReturn(moderator);
-        
+        when(userRepository.findByEmail("moderator@example.com")).thenReturn(Optional.ofNullable(moderator));
+
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
@@ -168,7 +188,7 @@ class UserServiceImplTest {
             userService.blockUserAccount(1L, false);
         });
         
-        assertEquals("Пользователь c ID 1 не найден ", exception.getMessage());
+        assertEquals("Пользователь c Id=1 не найден", exception.getMessage());
     }
     
     @Test
@@ -177,7 +197,8 @@ class UserServiceImplTest {
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("user@example.com");
         when(authentication.getPrincipal()).thenReturn(user);
-        
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.ofNullable(user));
+
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
@@ -186,6 +207,6 @@ class UserServiceImplTest {
             userService.blockUserAccount(1L, false);
         });
         
-        assertEquals("Недостаточно прав для редактирования", exception.getMessage());
+        assertEquals("Нет прав для доступа к сервису", exception.getMessage());
     }
 }

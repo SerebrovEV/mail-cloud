@@ -4,7 +4,8 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
+#      ddl-auto: create-drop
   datasource:
     url: jdbc:postgresql://localhost:5432/note
     username: admin
@@ -12,7 +13,7 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 10MB
+      max-request-size: 50MB
   rabbitmq:
     host: localhost
     port: 5672
@@ -23,9 +24,9 @@ server:
 cloud:
   accessKey:
   secretKey:
-  presigned-time: 15
+  link-lifetime: 15
   bucket-name: test-mail
   service-endpoint: https://storage.yandexcloud.net
-  signin-region: ru-central1
+  signing-region: ru-central1
 images:
   permitted-format: .jpg, .png, .gif

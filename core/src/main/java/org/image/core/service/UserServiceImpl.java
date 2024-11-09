@@ -10,8 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import static org.image.core.dto.model.TextConstant.TEXT_NOT_ENOUGH_RIGHT;
-import static org.image.core.dto.model.TextConstant.TEXT_USER_NOT_FOUND;
+import static org.image.core.dto.model.TextConstant.*;
 
 @Slf4j
 @Service
@@ -20,6 +19,11 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
+    /**
+     * Метод изменения блокировки пользователя модератором
+     * @param userId - id пользователя
+     * @param blockValue - значение блокировки
+     */
     @Override
     public void blockUserAccount(Long userId, boolean blockValue) {
         if (Role.MODERATOR.equals(getCurrentUser().getRole())) {
@@ -27,12 +31,16 @@ public class UserServiceImpl implements UserService {
                     .orElseThrow(() -> new UsernameNotFoundException(TEXT_USER_NOT_FOUND.formatted(userId)));
             userEntity.setAccountNonLocked(blockValue);
             userRepository.save(userEntity);
-            log.info("Изменен статус блокировки на %s пользователя %s пользователем %s".formatted(blockValue, userEntity.getEmail(), getCurrentUser().getEmail()));
+            log.info(TEXT_BLOCK_USER.formatted(blockValue, userEntity.getEmail(), getCurrentUser().getEmail()));
         } else {
             throw new NotEnoughRightsException(TEXT_NOT_ENOUGH_RIGHT);
         }
     }
 
+    /**
+     * Метод получения текущего пользователя приложения
+     * @return UserEntity
+     */
     @Override
     public UserEntity getCurrentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -42,9 +50,26 @@ public class UserServiceImpl implements UserService {
         var email = authentication.getName();
         return userRepository.findByEmail(email).orElse(null);
     }
-    
+
+    /**
+     * Метод поиска пользователя по ID
+     * @param userId ID пользователя
+     * @return UserEntity
+     */
     @Override
     public UserEntity findUserById(Long userId) {
         return userRepository.findById(userId).orElse(null);
     }
+
+    /**
+     * Метод поиска пользователя по Email
+     * @param userEmail email пользователя
+     * @return UserEntity
+     */
+    @Override
+    public UserEntity findUserByEmail(String userEmail) {
+        return userRepository.findByEmail(userEmail).orElse(null);
+    }
+
+
 }

@@ -1,25 +1,19 @@
 package org.image.core.dto.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.io.Serial;
-import java.io.Serializable;
+import lombok.*;
 
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventMessage implements Serializable {
-    
-    @Serial
-    private static final long serialVersionUID = 1L;
-    
+public class EventMessage {
+
     private String recipientEmail;
     private String subject;
     private String body;
+
+    public String printEventInfo() {
+        return "%s %s".formatted(recipientEmail, subject);
+    }
 }

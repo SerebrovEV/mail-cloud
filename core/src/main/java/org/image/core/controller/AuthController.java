@@ -18,15 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
 
-//    @PostMapping("/login")
-//    public ResponseEntity<?> login(@RequestBody @Validated LoginReq req) {
-//        if (authService.login(req.getEmail(), req.getPassword())) {
-//            return ResponseEntity.ok().build();
-//        } else {
-//            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-//        }
-//    }
-    
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam("email") String userName, @RequestParam("password") String password) {
         if (authService.login(userName, password)) {
@@ -41,6 +32,5 @@ public class AuthController {
         Role role = req.getRole() == null ? Role.USER : req.getRole();
         authService.register(req, role);
         return ResponseEntity.ok().build();
-
     }
 }

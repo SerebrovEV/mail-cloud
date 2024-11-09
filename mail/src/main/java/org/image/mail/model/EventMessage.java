@@ -14,11 +14,13 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventMessage implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 1L;
-    
+public class EventMessage {
+
     private String recipientEmail;
     private String subject;
     private String body;
+
+    public String printEventInfo() {
+        return "%s %s".formatted(recipientEmail, subject);
+    }
 }
