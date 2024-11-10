@@ -33,9 +33,7 @@ public class AuthController {
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "Успешная авторизация"),
-                    @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
-                    @ApiResponse(responseCode = "401", description = "Неавторизован"),
-                    @ApiResponse(responseCode = "404", description = "Не найдено")
+                    @ApiResponse(responseCode = "403", description = "Доступ запрещен")
             }
     )
     @PostMapping("/login")

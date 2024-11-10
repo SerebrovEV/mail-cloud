@@ -1,9 +1,13 @@
 package org.image.core.util;
 
-import org.image.core.dto.model.ImageInfo;
+import lombok.extern.slf4j.Slf4j;
+import org.image.core.dto.model.FileInfo;
 
 import java.util.List;
 
+import static org.image.core.dto.model.TextConstant.TEXT_START_WORK;
+
+@Slf4j
 public class ImageUtils {
 
     public static String getNameImagesList(List<String> images) {
@@ -19,7 +23,13 @@ public class ImageUtils {
         return String.valueOf(sb);
     }
 
-    public static double getSizeInMb(ImageInfo imageInfo) {
-        return (double) imageInfo.filesSize() / (1024 * 1024);
+    /**
+     * Метод перевода размера файла в Мегабайты
+     * @param fileInfo информация о файлах
+     * @return значение размера в Мегабайтах
+     */
+    public static double getSizeInMb(FileInfo fileInfo) {
+        log.info(TEXT_START_WORK.formatted("login"));
+        return (double) fileInfo.filesSize() / (1024 * 1024);
     }
 }

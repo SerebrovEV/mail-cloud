@@ -2,16 +2,22 @@ package org.image.mail.config;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Конфигурационный файл для RabbitMQ
+ */
 @Configuration
 public class RabbitConfig {
-    public static final String QUEUE_NAME = "eventQueue";
+
+    @Value("${rabbit.queue.name}")
+    private String queueName;
 
     @Bean
     public Queue imageEventQueue() {
-        return new Queue(QUEUE_NAME, false);
+        return new Queue(queueName, false);
     }
 
     @Bean

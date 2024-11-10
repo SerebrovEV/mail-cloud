@@ -1,7 +1,7 @@
 package org.image.core.util;
 
 import org.junit.jupiter.api.Test;
-import org.image.core.dto.model.ImageInfo;
+import org.image.core.dto.model.FileInfo;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,8 +24,8 @@ class ImageUtilsTest {
 
     @Test
     void testGetSizeInMb() {
-        ImageInfo imageInfo = new ImageInfo(List.of(), List.of(),1048576);
-        double result = ImageUtils.getSizeInMb(imageInfo);
+        FileInfo fileInfo = new FileInfo(List.of(), List.of(),1048576);
+        double result = ImageUtils.getSizeInMb(fileInfo);
         assertEquals(1.0, result, 0.0001);
     }
 

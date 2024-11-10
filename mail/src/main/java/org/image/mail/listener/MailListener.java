@@ -16,7 +16,12 @@ public class MailListener {
 
     private final EmailService emailService;
 
-    @RabbitListener(queues = "eventQueue")
+
+    /**
+     * Метод для обработки событий из очереди
+     * @param eventMessage событие из очереди
+     */
+    @RabbitListener(queues = "${rabbit.queue.name}")
     public void receiveMessage(EventMessage eventMessage) {
         log.info(TEXT_PROCESSING_EVENT.formatted(eventMessage.printEventInfo()));
         emailService.sendEmail(eventMessage.getRecipientEmail(), eventMessage.getSubject(), eventMessage.getBody());

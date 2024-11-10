@@ -30,24 +30,9 @@ public class SecurityUser implements UserDetails {
     public String getUsername() {
         return securityUserDto.getEmail();
     }
-    
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-    
+
     @Override
     public boolean isAccountNonLocked() {
         return securityUserDto.isAccountNonLocked();
-    }
-    
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-    
-    @Override
-    public boolean isEnabled() {
-        return true;
     }
 }

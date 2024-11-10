@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.image.core.dto.ImageDto;
 import org.image.core.dto.model.Action;
-import org.image.core.dto.model.ImageInfo;
+import org.image.core.dto.model.FileInfo;
 import org.image.core.dto.model.Role;
 import org.image.core.exception.ImageNotFoundException;
 import org.image.core.exception.NotEnoughRightsException;
@@ -40,11 +40,11 @@ public class ImageServiceImpl implements ImageService {
 
     /**
      * Метод загрузки изображений в многопоточном режиме.
-     *
      * @param images массив изображений для загрузки
      */
     @Override
     public void uploadImage(MultipartFile[] images) {
+        log.info(TEXT_START_WORK.formatted("uploadImage"));
         List<String> successUploadImages = new CopyOnWriteArrayList<>();
         List<String> notUploadImages = new CopyOnWriteArrayList<>();
         UserEntity currentUser = userService.getCurrentUser();
@@ -52,7 +52,6 @@ public class ImageServiceImpl implements ImageService {
         LocalDateTime uploadDateTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy_HHmmss");
         String timestamp = uploadDateTime.format(formatter);
-
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         CountDownLatch countDownLatch = new CountDownLatch(images.length);
         for (MultipartFile image : images) {
@@ -71,13 +70,18 @@ public class ImageServiceImpl implements ImageService {
                         imageRepository.save(imageEntity);
                         totalImagesSize.addAndGet(imageSize);
                         successUploadImages.add(imageName);
+                        log.info(TEXT_SAVED_IMAGE.formatted(imageName));
+                        countDownLatch.countDown();
                     } else {
                         notUploadImages.add(imageName);
+                        log.info(TEXT_NOT_SAVED_IMAGE.formatted(imageName));
+                        countDownLatch.countDown();
                     }
                 } else {
                     notUploadImages.add(imageName);
+                    log.info(TEXT_INCORRECT_FORMAT_IMAGE.formatted(imageName));
+                    countDownLatch.countDown();
                 }
-                countDownLatch.countDown();
             });
         }
         try {
@@ -87,9 +91,9 @@ public class ImageServiceImpl implements ImageService {
         } finally {
             executorService.shutdown();
         }
-        ImageInfo resultImageInfo = new ImageInfo(successUploadImages, notUploadImages, totalImagesSize.get());
+        FileInfo resultFileInfo = new FileInfo(successUploadImages, notUploadImages, totalImagesSize.get());
 //        CompletableFuture.runAsync(() -> eventService.sendMessage(currentUser.getEmail(), Action.UPLOAD, resultImageInfo));
-       eventService.sendMessage(currentUser.getEmail(), Action.UPLOAD, resultImageInfo);
+        eventService.sendMessage(currentUser.getEmail(), Action.UPLOAD, resultFileInfo);
     }
 
     /**
@@ -104,6 +108,7 @@ public class ImageServiceImpl implements ImageService {
      */
     @Override
     public List<ImageDto> getUserImages(Long imageId, LocalDate date, Long size, String sortBy, String orderBy) {
+        log.info(TEXT_START_WORK.formatted("getUserImages"));
         return getUserImages(userService.getCurrentUser(), imageId, date, size, sortBy, orderBy);
     }
 
@@ -120,6 +125,7 @@ public class ImageServiceImpl implements ImageService {
      */
     @Override
     public List<ImageDto> getUserImagesForModerator(Long userId, Long imageId, LocalDate date, Long size, String sortBy, String orderBy) {
+        log.info(TEXT_START_WORK.formatted("getUserImagesForModerator"));
         if (Role.MODERATOR.equals(userService.getCurrentUser().getRole())) {
             UserEntity ownerImages = userId == null ? null : userService.findUserById(userId);
             return getUserImages(ownerImages, imageId, date, size, sortBy, orderBy);
@@ -136,12 +142,13 @@ public class ImageServiceImpl implements ImageService {
      */
     @Override
     public String downloadUserImage(Long imageId) {
+        log.info(TEXT_START_WORK.formatted("downloadUserImage"));
         UserEntity ownerUser = userService.getCurrentUser();
         ImageEntity image = imageRepository.findByIdAndAndUserEntity(imageId, ownerUser)
                 .orElseThrow(() -> new ImageNotFoundException(TEXT_IMAGE_NOT_FOUND.formatted(imageId)));
         String temporaryLink = cloudService.createTemporaryLinkForDownload(image.getFileName());
         String userEmail = userService.getCurrentUser().getEmail();
-        eventService.sendMessage(userEmail, Action.DOWNLOAD, new ImageInfo(List.of(image.getFileName()),
+        eventService.sendMessage(userEmail, Action.DOWNLOAD, new FileInfo(List.of(image.getFileName()),
                 null, image.getSize()));
         log.info(TEXT_DOWNLOAD_IMAGE.formatted(userEmail, imageId));
         return temporaryLink;
@@ -159,6 +166,7 @@ public class ImageServiceImpl implements ImageService {
      * @return список изображений пользователя
      */
     private List<ImageDto> getUserImages(UserEntity userId, Long imageId, LocalDate date, Long size, String sortBy, String orderBy) {
+        log.info(TEXT_START_WORK.formatted("getUserImages"));
         Specification<ImageEntity> spec = Specification.where(ImageSpecification.hasId(imageId))
                 .and(ImageSpecification.hasUserId(userId))
                 .and(ImageSpecification.hasDate(date))
@@ -173,6 +181,4 @@ public class ImageServiceImpl implements ImageService {
                         .build())
                 .toList();
     }
-
-
 }

@@ -6,9 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.io.Serial;
-import java.io.Serializable;
-
 @Getter
 @Setter
 @Builder
@@ -20,6 +17,10 @@ public class EventMessage {
     private String subject;
     private String body;
 
+    /**
+     * Метод для текстового представления события
+     * @return текстовое представление
+     */
     public String printEventInfo() {
         return "%s %s".formatted(recipientEmail, subject);
     }

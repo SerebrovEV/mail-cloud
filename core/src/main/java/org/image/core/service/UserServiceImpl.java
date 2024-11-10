@@ -26,6 +26,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void blockUserAccount(Long userId, boolean blockValue) {
+        log.info(TEXT_START_WORK.formatted("blockUserAccount"));
         if (Role.MODERATOR.equals(getCurrentUser().getRole())) {
             UserEntity userEntity = userRepository.findById(userId)
                     .orElseThrow(() -> new UsernameNotFoundException(TEXT_USER_NOT_FOUND.formatted(userId)));
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserEntity getCurrentUser() {
+        log.info(TEXT_START_WORK.formatted("getCurrentUser"));
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
@@ -58,6 +60,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserEntity findUserById(Long userId) {
+        log.info(TEXT_START_WORK.formatted("findUserById"));
         return userRepository.findById(userId).orElse(null);
     }
 
@@ -68,6 +71,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserEntity findUserByEmail(String userEmail) {
+        log.info(TEXT_START_WORK.formatted("findUserByEmail"));
         return userRepository.findByEmail(userEmail).orElse(null);
     }
 

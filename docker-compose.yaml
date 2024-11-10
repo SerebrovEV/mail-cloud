@@ -1,0 +1,61 @@
+version: '1.1'
+
+services:
+  core:
+    image: core-image
+    build:
+      context: ./core
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_RABBITMQ_HOST=${SPRING_RABBITMQ_HOST}
+      - SPRING_RABBITMQ_USERNAME=${SPRING_RABBITMQ_USERNAME}
+      - SPRING_RABBITMQ_PASSWORD=${SPRING_RABBITMQ_PASSWORD}
+      - RABBIT_QUEUE_NAME=${RABBIT_QUEUE_NAME}
+      - CLOUD_ACCESS_KEY=${CLOUD_ACCESS_KEY}
+      - CLOUD_SECRET_KEY=${CLOUD_SECRET_KEY}
+      - CLOUD_BUCKET_NAME=${CLOUD_BUCKET_NAME}
+      - FILE_MAX_SIZE=10MB
+      - MAX_REQUEST_SIZE=100MB
+    ports:
+      - "7781:7781"
+
+  mail:
+    image: mail-image
+    build:
+      context: ./mail
+    depends_on:
+      - rabbitmq
+    environment:
+      - SPRING_RABBITMQ_HOST=${SPRING_RABBITMQ_HOST}
+      - SPRING_RABBITMQ_USERNAME=${SPRING_RABBITMQ_USERNAME}
+      - SPRING_RABBITMQ_PASSWORD=${SPRING_RABBITMQ_PASSWORD}
+      - RABBIT_QUEUE_NAME=${RABBIT_QUEUE_NAME}
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: ${SPRING_DATASOURCE_NAME}
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+networks:
+  default:
+    driver: bridge

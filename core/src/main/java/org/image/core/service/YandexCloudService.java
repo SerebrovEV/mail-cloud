@@ -14,9 +14,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Date;
 
+import static org.image.core.dto.model.TextConstant.TEXT_START_WORK;
 import static org.image.core.dto.model.TextConstant.TEXT_UPLOAD_ON_CLOUD;
 
 @Slf4j
@@ -42,18 +42,19 @@ public class YandexCloudService implements CloudService {
 
     /**
      * Загрузка файлов на облако
-     * @param fileName - имя файла для загрузки
-     * @param file - файл для загрузки на облако
+     * @param fileName  имя файла для загрузки
+     * @param file      файл для загрузки на облако
      * @return результат сохранения в облако в виде true или false
      */
     @Override
     public boolean uploadFile(String fileName, MultipartFile file) {
+        log.info(TEXT_START_WORK.formatted("uploadFile"));
         long imageSize = file.getSize();
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(imageSize);
         try {
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(imageSize);
             s3.putObject(new PutObjectRequest(bucketName, fileName, file.getInputStream(), metadata));
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
             return false;
         }
@@ -68,6 +69,7 @@ public class YandexCloudService implements CloudService {
      */
     @Override
     public String createTemporaryLinkForDownload(String imageName) {
+        log.info(TEXT_START_WORK.formatted("createTemporaryLinkForDownload"));
         Date expiration = new Date();
         long expTimeMillis = expiration.getTime();
         expTimeMillis += 1000L * 60 * linkLifetime;

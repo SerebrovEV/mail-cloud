@@ -4,28 +4,31 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: update
-#      ddl-auto: create-drop
+#      ddl-auto: update
+      ddl-auto: create-drop
   datasource:
-    url: jdbc:postgresql://localhost:5432/note
-    username: admin
-    password: password
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 50MB
+      max-file-size: ${FILE_MAX_SIZE}
+      max-request-size: ${MAX_REQUEST_SIZE}
   rabbitmq:
-    host: localhost
+    host: ${SPRING_RABBITMQ_HOST}
     port: 5672
-    username: guest
-    password: guest
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
 server:
   port: 7781
+rabbit:
+  queue:
+    name: ${RABBIT_QUEUE_NAME}
 cloud:
-  accessKey:
-  secretKey:
+  accessKey: ${CLOUD_ACCESS_KEY}
+  secretKey: ${CLOUD_SECRET_KEY}
   link-lifetime: 15
-  bucket-name: test-mail
+  bucket-name: ${CLOUD_BUCKET_NAME}
   service-endpoint: https://storage.yandexcloud.net
   signing-region: ru-central1
 images:

@@ -21,6 +21,13 @@ public class EmailService {
         this.mailSender = mailSender;
         this.postServerMail = postServerMail;
     }
+
+    /**
+     * Метод для отправления сообщей пользователям с результатами событий
+     * @param to email получателя
+     * @param subject тема email
+     * @param body текс email
+     */
     public void sendEmail(String to, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);

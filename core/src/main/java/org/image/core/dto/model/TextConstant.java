@@ -24,4 +24,9 @@ public class TextConstant {
     public static String TEXT_ADD_EVENT_TO_QUEUE = "Добавлено событие в очередь %s";
     public static String TEXT_MISSING_IMAGE = "Отсутсвуют";
     public static String TEXT_UPLOAD_ON_CLOUD = "Файл %s сохранен в облаке";
+    public static String TEXT_INCORRECT_FORMAT_IMAGE = "Изображения %s некорректного формата";
+    public static String TEXT_SAVED_IMAGE = "Сохранение изображения %s";
+    public static String TEXT_NOT_SAVED_IMAGE = "Изображения %s не сохранено";
+    public static String TEXT_START_WORK = "Started working method %s";
+
 }

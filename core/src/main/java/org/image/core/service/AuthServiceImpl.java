@@ -25,19 +25,32 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final EventService eventService;
-    
-    
+
+    /**
+     * Метод для авторизации пользователя
+     * @param userName email пользователя
+     * @param password пароль пользователя
+     * @return результат авторизации
+     */
     @Override
     public boolean login(String userName, String password) {
+        log.info(TEXT_START_WORK.formatted("login"));
         UserEntity userEntity = userRepository.findByEmail(userName).orElse(null);
         if (userEntity == null) {
             return false;
         }
         return passwordEncoder.matches(password, userEntity.getPassword());
     }
-    
+
+    /**
+     * Метод регистрации пользователя
+     * @param req форма регистрации
+     * @param role роль
+     * @return созданный пользователь
+     */
     @Override
     public UserDto register(RegisterReq req, Role role) {
+        log.info(TEXT_START_WORK.formatted("register"));
         if (!PasswordValidator.isValidPassword(req.getPassword())) {
             throw new IncorrectPasswordException(TEXT_INCORRECT_FORMAT_PASSWORD);
         }

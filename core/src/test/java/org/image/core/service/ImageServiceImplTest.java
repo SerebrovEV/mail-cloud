@@ -2,7 +2,7 @@ package org.image.core.service;
 
 import org.image.core.dto.ImageDto;
 import org.image.core.dto.model.Action;
-import org.image.core.dto.model.ImageInfo;
+import org.image.core.dto.model.FileInfo;
 import org.image.core.dto.model.Role;
 import org.image.core.exception.NotEnoughRightsException;
 import org.image.core.repository.ImageRepository;
@@ -70,7 +70,7 @@ class ImageServiceImplTest {
         when(userService.getCurrentUser()).thenReturn(currentUser);
         assertTrue(imageEntityCaptor.getAllValues().getFirst().getFileName().endsWith("image1.jpg"));
         assertEquals(1024L, imageEntityCaptor.getAllValues().getFirst().getSize());
-        verify(eventService).sendMessage(eq(currentUser.getEmail()), eq(Action.UPLOAD), any(ImageInfo.class));
+        verify(eventService).sendMessage(eq(currentUser.getEmail()), eq(Action.UPLOAD), any(FileInfo.class));
     }
 
     @Test
@@ -86,7 +86,7 @@ class ImageServiceImplTest {
         imageService.uploadImage(images);
 
         verify(imageRepository, never()).save(any(ImageEntity.class));
-        verify(eventService).sendMessage(eq(currentUser.getEmail()), eq(Action.UPLOAD), any(ImageInfo.class));
+        verify(eventService).sendMessage(eq(currentUser.getEmail()), eq(Action.UPLOAD), any(FileInfo.class));
     }
 
     @Test
@@ -99,7 +99,7 @@ class ImageServiceImplTest {
 
         verify(cloudService).uploadFile(anyString(), any(MultipartFile.class));
         verify(imageRepository, never()).save(any(ImageEntity.class));
-        verify(eventService).sendMessage(eq(currentUser.getEmail()), eq(Action.UPLOAD), any(ImageInfo.class));
+        verify(eventService).sendMessage(eq(currentUser.getEmail()), eq(Action.UPLOAD), any(FileInfo.class));
     }
 
     @Test
