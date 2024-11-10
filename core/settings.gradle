@@ -1,1 +1,12 @@
+plugins {
+    id 'com.gradle.enterprise' version '3.7.1'
+}
+
+gradleEnterprise {
+    buildScan {
+        termsOfServiceUrl  = "https://gradle.com/help/legal-terms-of-use"
+        termsOfServiceAgree  = false
+    }
+}
+
 rootProject.name = 'core'
